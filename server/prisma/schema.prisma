@@ -1,6 +1,7 @@
 /// Prisma schema for the DJ Playlist app
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {

@@ -23,7 +23,7 @@ app.use(
 app.use(express.json());
 
 // BetterAuth Node handler for Express
-app.all('/api/auth/*', toNodeHandler(betterAuth));
+app.all('/api/auth/*splat', toNodeHandler(betterAuth));
 
 // Existing API routes
 app.use('/api/auth-local', authRouter); // fallback for token‑based login (kept from earlier code)
