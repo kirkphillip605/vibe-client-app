@@ -18,6 +18,34 @@ musicRouter.get('/bucket/:id/tracks', async (req, res) => {
   }
 });
 
+// 6. Spotify Authorize Redirect (No JWT auth needed for browser redirects)
+musicRouter.get('/spotify/authorize', (req, res) => {
+  const state = req.query.state as string || '';
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:5173';
+  const redirectUri = `${frontendUrl}/spotify-callback`;
+
+  if (!clientId) {
+    return res.redirect(`${redirectUri}?code=mock-code&state=${state}`);
+  }
+
+  res.redirect(`https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=playlist-read-private%20playlist-read-collaborative&state=${state}`);
+});
+
+// 7. Tidal Authorize Redirect (No JWT auth needed for browser redirects)
+musicRouter.get('/tidal/authorize', (req, res) => {
+  const state = req.query.state as string || '';
+  const clientId = process.env.TIDAL_CLIENT_ID;
+  const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:5173';
+  const redirectUri = `${frontendUrl}/tidal-callback`;
+
+  if (!clientId) {
+    return res.redirect(`${redirectUri}?code=mock-code&state=${state}`);
+  }
+
+  res.redirect(`https://login.tidal.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=playlists.read&state=${state}`);
+});
+
 // Require Auth (DJ or Client) for subsequent actions
 musicRouter.use(requireAuth);
 
@@ -245,33 +273,7 @@ musicRouter.delete('/track/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// 6. Spotify Authorize Redirect
-musicRouter.get('/spotify/authorize', (req, res) => {
-  const state = req.query.state as string || '';
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:5173';
-  const redirectUri = `${frontendUrl}/spotify-callback`;
 
-  if (!clientId) {
-    return res.redirect(`${redirectUri}?code=mock-code&state=${state}`);
-  }
-
-  res.redirect(`https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=playlist-read-private%20playlist-read-collaborative&state=${state}`);
-});
-
-// 7. Tidal Authorize Redirect
-musicRouter.get('/tidal/authorize', (req, res) => {
-  const state = req.query.state as string || '';
-  const clientId = process.env.TIDAL_CLIENT_ID;
-  const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:5173';
-  const redirectUri = `${frontendUrl}/tidal-callback`;
-
-  if (!clientId) {
-    return res.redirect(`${redirectUri}?code=mock-code&state=${state}`);
-  }
-
-  res.redirect(`https://login.tidal.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=playlists.read&state=${state}`);
-});
 
 // 8. Spotify User Authentication Code Exchange
 musicRouter.post('/spotify/token', async (req, res) => {
@@ -314,8 +316,7 @@ musicRouter.post('/spotify/token', async (req, res) => {
 
 // 7. Get User Spotify Playlists
 musicRouter.get('/spotify/playlists', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const accessToken = authHeader?.split(' ')[1];
+  const accessToken = (req.headers['x-spotify-access-token'] as string) || req.headers.authorization?.split(' ')[1];
 
   if (!accessToken || accessToken === 'mock-spotify-access-token') {
     return res.json([
@@ -350,8 +351,7 @@ musicRouter.get('/spotify/playlists', async (req, res) => {
 // 8. Get Spotify Playlist Tracks
 musicRouter.get('/spotify/playlist/:id/tracks', async (req, res) => {
   const { id } = req.params;
-  const authHeader = req.headers.authorization;
-  const accessToken = authHeader?.split(' ')[1];
+  const accessToken = (req.headers['x-spotify-access-token'] as string) || req.headers.authorization?.split(' ')[1];
 
   if (!accessToken || accessToken === 'mock-spotify-access-token') {
     if (id === 'mock-pl-1') {
@@ -432,8 +432,7 @@ musicRouter.post('/tidal/token', async (req, res) => {
 
 // 10. Get User Tidal Playlists
 musicRouter.get('/tidal/playlists', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const accessToken = authHeader?.split(' ')[1];
+  const accessToken = (req.headers['x-tidal-access-token'] as string) || req.headers.authorization?.split(' ')[1];
 
   if (!accessToken || accessToken === 'mock-tidal-access-token') {
     return res.json([
@@ -464,8 +463,7 @@ musicRouter.get('/tidal/playlists', async (req, res) => {
 // 11. Get Tidal Playlist Tracks
 musicRouter.get('/tidal/playlist/:id/tracks', async (req, res) => {
   const { id } = req.params;
-  const authHeader = req.headers.authorization;
-  const accessToken = authHeader?.split(' ')[1];
+  const accessToken = (req.headers['x-tidal-access-token'] as string) || req.headers.authorization?.split(' ')[1];
 
   if (!accessToken || accessToken === 'mock-tidal-access-token') {
     if (id === 'mock-td-1') {

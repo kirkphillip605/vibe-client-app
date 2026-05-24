@@ -168,10 +168,14 @@ export default function ClientPortalPage() {
     setPlaylistsLoading(true);
 
     try {
+      const headers: Record<string, string> = {};
+      if (service === 'Spotify') {
+        headers['x-spotify-access-token'] = token;
+      } else {
+        headers['x-tidal-access-token'] = token;
+      }
       const resp = await api.get(`/music/${service.toLowerCase()}/playlists`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
       });
       setPlaylists(resp.data);
     } catch {
@@ -191,10 +195,14 @@ export default function ClientPortalPage() {
     setSelectedPlaylist(playlist);
     setTracksLoading(true);
     try {
+      const headers: Record<string, string> = {};
+      if (activeService === 'Spotify') {
+        headers['x-spotify-access-token'] = token;
+      } else {
+        headers['x-tidal-access-token'] = token;
+      }
       const resp = await api.get(`/music/${activeService?.toLowerCase()}/playlist/${playlist.id}/tracks`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
       });
       setPlaylistTracks(resp.data);
     } catch {
