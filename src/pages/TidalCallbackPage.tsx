@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '@/api/client';
 import { Loader2 } from 'lucide-react';
@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast';
 export default function TidalCallbackPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const exchangeAttempted = useRef(false);
 
   useEffect(() => {
     const code = searchParams.get('code');
@@ -18,6 +19,9 @@ export default function TidalCallbackPage() {
       return;
     }
 
+    if (exchangeAttempted.current) return;
+    exchangeAttempted.current = true;
+
     const exchangeToken = async () => {
       try {
         const resp = await api.post('/music/tidal/token', {
@@ -27,7 +31,7 @@ export default function TidalCallbackPage() {
         localStorage.setItem('tidal_access_token', resp.data.access_token);
         toast({ title: 'Tidal account connected!' });
         if (state) {
-          navigate(`/event/${state}`);
+          navigate(`/event/${state}?import=tidal`);
         } else {
           navigate('/');
         }

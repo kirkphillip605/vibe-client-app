@@ -70,6 +70,14 @@ export default function DashboardPage() {
                   </p>
                   <div className="flex gap-2">
                     <Button
+                      size="sm"
+                      asChild
+                    >
+                      <Link to={`/events/${ev.id}`}>
+                        View Details
+                      </Link>
+                    </Button>
+                    <Button
                       variant="outline"
                       size="sm"
                       onClick={() => copyLink(ev.uniqueCode)}

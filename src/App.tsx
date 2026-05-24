@@ -4,6 +4,7 @@ import SignupPage from '@/pages/SignupPage';
 import DashboardPage from '@/pages/DashboardPage';
 import EventCreatePage from '@/pages/EventCreatePage';
 import ClientPortalPage from '@/pages/ClientPortalPage';
+import EventDetailPage from '@/pages/EventDetailPage';
 import LandingPage from '@/pages/LandingPage';
 import SpotifyCallbackPage from '@/pages/SpotifyCallbackPage';
 import TidalCallbackPage from '@/pages/TidalCallbackPage';
@@ -41,7 +42,14 @@ export default function App() {
           </PrivateRoute>
         }
       />
-
+      <Route
+        path="/events/:id"
+        element={
+          <PrivateRoute>
+            <EventDetailPage />
+          </PrivateRoute>
+        }
+      />
       {/* Public Code-Protected Client Portal */}
       <Route path="/event/:code" element={<ClientPortalPage />} />
       

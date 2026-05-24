@@ -340,6 +340,7 @@ musicRouter.get('/spotify/playlists', async (req, res) => {
       name: pl.name,
       trackCount: pl.tracks.total,
       artworkUrl: pl.images?.[0]?.url ?? '',
+      externalUrl: pl.external_urls?.spotify ?? `https://open.spotify.com/playlist/${pl.id}`,
     }));
 
     res.json(playlists);
@@ -453,6 +454,7 @@ musicRouter.get('/tidal/playlists', async (req, res) => {
       name: pl.title,
       trackCount: pl.numberOfTracks,
       artworkUrl: pl.image ?? '',
+      externalUrl: pl.url ?? `https://tidal.com/playlist/${pl.uuid}`,
     }));
     res.json(playlists);
   } catch (error: any) {
@@ -493,6 +495,48 @@ musicRouter.get('/tidal/playlist/:id/tracks', async (req, res) => {
       externalTrackId: item.id,
     }));
     res.json(tracks);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 12. Link/Unlink a playlist to/from a bucket
+const playlistLinkSchema = z.object({
+  bucketId: z.string(),
+  playlistUrl: z.string().url().nullable().or(z.literal('')),
+  playlistName: z.string().nullable().or(z.literal('')),
+  playlistProvider: z.enum(['Spotify', 'Tidal']).nullable().or(z.literal('')),
+});
+
+musicRouter.patch('/bucket/playlist', async (req: AuthRequest, res) => {
+  const parse = playlistLinkSchema.safeParse(req.body);
+  if (!parse.success) return res.status(400).json(parse.error);
+  const { bucketId, playlistUrl, playlistName, playlistProvider } = parse.data;
+
+  try {
+    const bucket = await prisma.musicBucket.findUnique({
+      where: { id: bucketId },
+      include: { event: true },
+    });
+    if (!bucket) return res.status(404).json({ error: 'Bucket not found' });
+
+    // Auth validation
+    const isDJOwner = req.user?.role === 'dj' && bucket.event.userId === req.user.id;
+    const isAuthorizedClient = req.clientEvent?.role === 'client' && bucket.eventId === req.clientEvent.id;
+
+    if (!isDJOwner && !isAuthorizedClient) {
+      return res.status(403).json({ error: 'Forbidden: Access denied' });
+    }
+
+    const updated = await prisma.musicBucket.update({
+      where: { id: bucketId },
+      data: {
+        playlistUrl: playlistUrl || null,
+        playlistName: playlistName || null,
+        playlistProvider: playlistProvider || null,
+      },
+    });
+    res.json(updated);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

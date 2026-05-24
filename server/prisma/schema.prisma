@@ -37,12 +37,15 @@ model Event {
 }
 
 model MusicBucket {
-  id         String   @id @default(uuid())
-  eventId    String
-  bucketType BucketType
-  notes      String   @default("")
-  tracks     Track[]
-  event      Event    @relation(fields: [eventId], references: [id])
+  id               String      @id @default(uuid())
+  eventId          String
+  bucketType       BucketType
+  notes            String      @default("")
+  playlistUrl      String?
+  playlistName     String?
+  playlistProvider String?
+  tracks           Track[]
+  event            Event       @relation(fields: [eventId], references: [id])
   @@unique([eventId, bucketType])
 }
 

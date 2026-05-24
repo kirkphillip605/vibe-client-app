@@ -80,3 +80,26 @@ eventRouter.get('/', async (req: AuthRequest, res) => {
   res.json(events);
 });
 
+// Get event details (protected for DJ owner)
+eventRouter.get('/:id', async (req: AuthRequest, res) => {
+  if (req.user?.role !== 'dj') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const event = await prisma.event.findFirst({
+    where: { id: req.params.id, userId: req.user.id },
+    include: {
+      buckets: {
+        include: {
+          tracks: {
+            orderBy: { position: 'asc' },
+          },
+        },
+      },
+    },
+  });
+
+  if (!event) return res.status(404).json({ error: 'Event not found' });
+  res.json(event);
+});
+

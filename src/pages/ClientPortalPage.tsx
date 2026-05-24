@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import api from '@/api/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,9 @@ interface Bucket {
   id: string;
   bucketType: 'ceremony' | 'reception' | 'do_not_play';
   notes: string;
+  playlistUrl?: string;
+  playlistName?: string;
+  playlistProvider?: string;
 }
 
 interface Track {
@@ -33,6 +36,7 @@ interface Event {
 
 export default function ClientPortalPage() {
   const { code } = useParams<{ code: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
@@ -49,6 +53,23 @@ export default function ClientPortalPage() {
   const [playlistTracks, setPlaylistTracks] = useState<any[]>([]);
   const [tracksLoading, setTracksLoading] = useState(false);
   const [importing, setImporting] = useState(false);
+
+  // Listen for the redirect 'import' query param to auto-open modal
+  useEffect(() => {
+    if (!event) return;
+    const importService = searchParams.get('import');
+    if (importService === 'spotify' || importService === 'tidal') {
+      const service = importService === 'spotify' ? 'Spotify' : 'Tidal';
+      
+      // Clear parameter from URL so it doesn't reopen on manual page refresh
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('import');
+      setSearchParams(newParams, { replace: true });
+
+      // Automatically trigger import click
+      handlePlaylistImportClick(service);
+    }
+  }, [searchParams, setSearchParams, event]);
 
   // Fetch event + buckets
   useEffect(() => {
@@ -243,6 +264,93 @@ export default function ClientPortalPage() {
     setPlaylistModalOpen(false);
   };
 
+  const handleLinkPlaylist = async (playlist: any) => {
+    if (!selectedBucket) return;
+    try {
+      await api.patch('/music/bucket/playlist', {
+        bucketId: selectedBucket.id,
+        playlistUrl: playlist.externalUrl,
+        playlistName: playlist.name,
+        playlistProvider: activeService,
+      });
+      toast({ title: 'Playlist linked successfully!' });
+      
+      // update event state locally
+      setEvent((prev) =>
+        prev && {
+          ...prev,
+          buckets: prev.buckets.map((b) =>
+            b.id === selectedBucket.id
+              ? {
+                  ...b,
+                  playlistUrl: playlist.externalUrl,
+                  playlistName: playlist.name,
+                  playlistProvider: activeService,
+                }
+              : b
+          ),
+        }
+      );
+      // update selected bucket locally
+      setSelectedBucket((prev) =>
+        prev && prev.id === selectedBucket.id
+          ? {
+              ...prev,
+              playlistUrl: playlist.externalUrl,
+              playlistName: playlist.name,
+              playlistProvider: activeService,
+            }
+          : prev
+      );
+      setPlaylistModalOpen(false);
+    } catch {
+      toast({ variant: 'destructive', title: 'Failed to link playlist' });
+    }
+  };
+
+  const handleUnlinkPlaylist = async () => {
+    if (!selectedBucket) return;
+    try {
+      await api.patch('/music/bucket/playlist', {
+        bucketId: selectedBucket.id,
+        playlistUrl: null,
+        playlistName: null,
+        playlistProvider: null,
+      });
+      toast({ title: 'Playlist unlinked successfully.' });
+
+      // update event state locally
+      setEvent((prev) =>
+        prev && {
+          ...prev,
+          buckets: prev.buckets.map((b) =>
+            b.id === selectedBucket.id
+              ? {
+                  ...b,
+                  playlistUrl: undefined,
+                  playlistName: undefined,
+                  playlistProvider: undefined,
+                }
+              : b
+          ),
+        }
+      );
+      // update selected bucket locally
+      setSelectedBucket((prev) =>
+        prev && prev.id === selectedBucket.id
+          ? {
+              ...prev,
+              playlistUrl: undefined,
+              playlistName: undefined,
+              playlistProvider: undefined,
+            }
+          : prev
+      );
+    } catch {
+      toast({ variant: 'destructive', title: 'Failed to unlink playlist' });
+    }
+  };
+
   if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
 
   if (!event) return <p className="text-center mt-10 text-lg text-muted-foreground">Event not found</p>;
@@ -283,6 +391,40 @@ export default function ClientPortalPage() {
                 className="min-h-[120px] bg-white/50 backdrop-blur-sm border-gray-200 focus:border-primary"
                 onBlur={(e) => saveNotes(e.target.value)}
               />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Linked Playlist card */}
+        {selectedBucket && selectedBucket.playlistUrl && (
+          <Card className="bg-emerald-500/10 border border-emerald-500/20 shadow-xl">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <Music className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm">
+                    Linked {selectedBucket.playlistProvider} Playlist
+                  </h4>
+                  <a
+                    href={selectedBucket.playlistUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 mt-0.5"
+                  >
+                    {selectedBucket.playlistName || 'View Playlist'}
+                  </a>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950"
+                onClick={handleUnlinkPlaylist}
+              >
+                Unlink Playlist
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -450,9 +592,14 @@ export default function ClientPortalPage() {
                             <p className="font-semibold text-sm truncate">{pl.name}</p>
                             <p className="text-xs text-muted-foreground">{pl.trackCount} tracks</p>
                           </div>
-                          <Button size="sm" onClick={() => fetchPlaylistTracks(pl)}>
-                            Select
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => handleLinkPlaylist(pl)}>
+                              Link Playlist
+                            </Button>
+                            <Button size="sm" onClick={() => fetchPlaylistTracks(pl)}>
+                              View & Import
+                            </Button>
+                          </div>
                         </Card>
                       ))
                     )}
