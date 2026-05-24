@@ -156,7 +156,7 @@ export default function ClientPortalPage() {
     const token = localStorage.getItem(tokenKey);
 
     if (!token) {
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+      const backendUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
       window.location.href = `${backendUrl}/music/${service.toLowerCase()}/authorize?state=${code}`;
       return;
     }
@@ -176,7 +176,7 @@ export default function ClientPortalPage() {
       setPlaylists(resp.data);
     } catch {
       localStorage.removeItem(tokenKey);
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+      const backendUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
       window.location.href = `${backendUrl}/music/${service.toLowerCase()}/authorize?state=${code}`;
     } finally {
       setPlaylistsLoading(false);
