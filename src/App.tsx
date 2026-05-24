@@ -5,6 +5,8 @@ import DashboardPage from '@/pages/DashboardPage';
 import EventCreatePage from '@/pages/EventCreatePage';
 import ClientPortalPage from '@/pages/ClientPortalPage';
 import LandingPage from '@/pages/LandingPage';
+import SpotifyCallbackPage from '@/pages/SpotifyCallbackPage';
+import TidalCallbackPage from '@/pages/TidalCallbackPage';
 import { useAuth } from '@/contexts/AuthContext';
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
@@ -42,6 +44,10 @@ export default function App() {
 
       {/* Public Code-Protected Client Portal */}
       <Route path="/event/:code" element={<ClientPortalPage />} />
+      
+      {/* OAuth Callbacks */}
+      <Route path="/spotify-callback" element={<SpotifyCallbackPage />} />
+      <Route path="/tidal-callback" element={<TidalCallbackPage />} />
       
       {/* Fallback to code landing page */}
       <Route path="*" element={<Navigate to="/" replace />} />
