@@ -32,6 +32,8 @@ interface Event {
   eventName: string;
   uniqueCode: string;
   buckets: Bucket[];
+  isSpotifyConnected?: boolean;
+  isTidalConnected?: boolean;
 }
 
 export default function ClientPortalPage() {
@@ -173,10 +175,9 @@ export default function ClientPortalPage() {
   };
 
   const handlePlaylistImportClick = async (service: 'Spotify' | 'Tidal') => {
-    const tokenKey = service === 'Spotify' ? 'spotify_access_token' : 'tidal_access_token';
-    const token = localStorage.getItem(tokenKey);
+    const isConnected = service === 'Spotify' ? event?.isSpotifyConnected : event?.isTidalConnected;
 
-    if (!token) {
+    if (!isConnected) {
       const backendUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
       window.location.href = `${backendUrl}/music/${service.toLowerCase()}/authorize?state=${code}`;
       return;
@@ -189,18 +190,9 @@ export default function ClientPortalPage() {
     setPlaylistsLoading(true);
 
     try {
-      const headers: Record<string, string> = {};
-      if (service === 'Spotify') {
-        headers['x-spotify-access-token'] = token;
-      } else {
-        headers['x-tidal-access-token'] = token;
-      }
-      const resp = await api.get(`/music/${service.toLowerCase()}/playlists`, {
-        headers,
-      });
+      const resp = await api.get(`/music/${service.toLowerCase()}/playlists`);
       setPlaylists(resp.data);
     } catch {
-      localStorage.removeItem(tokenKey);
       const backendUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
       window.location.href = `${backendUrl}/music/${service.toLowerCase()}/authorize?state=${code}`;
     } finally {
@@ -209,22 +201,10 @@ export default function ClientPortalPage() {
   };
 
   const fetchPlaylistTracks = async (playlist: any) => {
-    const tokenKey = activeService === 'Spotify' ? 'spotify_access_token' : 'tidal_access_token';
-    const token = localStorage.getItem(tokenKey);
-    if (!token) return;
-
     setSelectedPlaylist(playlist);
     setTracksLoading(true);
     try {
-      const headers: Record<string, string> = {};
-      if (activeService === 'Spotify') {
-        headers['x-spotify-access-token'] = token;
-      } else {
-        headers['x-tidal-access-token'] = token;
-      }
-      const resp = await api.get(`/music/${activeService?.toLowerCase()}/playlist/${playlist.id}/tracks`, {
-        headers,
-      });
+      const resp = await api.get(`/music/${activeService?.toLowerCase()}/playlist/${playlist.id}/tracks`);
       setPlaylistTracks(resp.data);
     } catch {
       toast({ variant: 'destructive', title: 'Failed to fetch tracks' });

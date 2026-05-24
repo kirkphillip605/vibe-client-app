@@ -24,11 +24,10 @@ export default function TidalCallbackPage() {
 
     const exchangeToken = async () => {
       try {
-        const resp = await api.post('/music/tidal/token', {
+        await api.post('/music/tidal/token', {
           code,
           redirectUri: `${window.location.origin}/tidal-callback`,
         });
-        localStorage.setItem('tidal_access_token', resp.data.access_token);
         toast({ title: 'Tidal account connected!' });
         if (state) {
           navigate(`/event/${state}?import=tidal`);

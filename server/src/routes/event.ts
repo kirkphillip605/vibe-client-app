@@ -22,7 +22,24 @@ eventRouter.get('/code/:code', async (req, res) => {
     { expiresIn: '30d' }
   );
 
-  res.json({ event, clientToken });
+  const {
+    spotifyAccessToken,
+    spotifyRefreshToken,
+    spotifyTokenExpiry,
+    tidalAccessToken,
+    tidalRefreshToken,
+    tidalTokenExpiry,
+    ...publicEvent
+  } = event as any;
+
+  res.json({
+    event: {
+      ...publicEvent,
+      isSpotifyConnected: !!spotifyAccessToken,
+      isTidalConnected: !!tidalAccessToken,
+    },
+    clientToken,
+  });
 });
 
 // Require DJ Admin Auth for subsequent routes
@@ -100,6 +117,21 @@ eventRouter.get('/:id', async (req: AuthRequest, res) => {
   });
 
   if (!event) return res.status(404).json({ error: 'Event not found' });
-  res.json(event);
+
+  const {
+    spotifyAccessToken,
+    spotifyRefreshToken,
+    spotifyTokenExpiry,
+    tidalAccessToken,
+    tidalRefreshToken,
+    tidalTokenExpiry,
+    ...publicEvent
+  } = event as any;
+
+  res.json({
+    ...publicEvent,
+    isSpotifyConnected: !!spotifyAccessToken,
+    isTidalConnected: !!tidalAccessToken,
+  });
 });
 

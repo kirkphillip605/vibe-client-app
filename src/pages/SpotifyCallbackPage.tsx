@@ -24,11 +24,10 @@ export default function SpotifyCallbackPage() {
 
     const exchangeToken = async () => {
       try {
-        const resp = await api.post('/music/spotify/token', {
+        await api.post('/music/spotify/token', {
           code,
           redirectUri: `${window.location.origin}/spotify-callback`,
         });
-        localStorage.setItem('spotify_access_token', resp.data.access_token);
         toast({ title: 'Spotify account connected!' });
         if (state) {
           navigate(`/event/${state}?import=spotify`);
