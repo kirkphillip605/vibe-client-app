@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   const login = async (email: string, password: string) => {
-    const resp = await api.post('/auth/login', { email, password });
+    const resp = await api.post('/auth-local/login', { email, password });
     const t = resp.data.token;
     localStorage.setItem('dj_token', t);
     setToken(t);
@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signup = async (email: string, password: string) => {
-    const resp = await api.post('/auth/signup', { email, password });
+    const resp = await api.post('/auth-local/signup', { email, password });
     const t = resp.data.token;
     localStorage.setItem('dj_token', t);
     setToken(t);
