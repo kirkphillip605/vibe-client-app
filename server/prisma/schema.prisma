@@ -1,0 +1,60 @@
+/// Prisma schema for the DJ Playlist app
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum BucketType {
+  ceremony
+  reception
+  do_not_play
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  events       Event[]
+}
+
+model Event {
+  id          String        @id @default(uuid())
+  uniqueCode  String        @unique @default(dbgenerated("upper(substr(md5(random()::text),1,6))"))
+  eventName   String
+  contactName String
+  phone       String
+  email       String
+  createdAt   DateTime      @default(now())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  buckets     MusicBucket[]
+  @@index([uniqueCode])
+}
+
+model MusicBucket {
+  id         String   @id @default(uuid())
+  eventId    String
+  bucketType BucketType
+  notes      String   @default("")
+  tracks     Track[]
+  event      Event    @relation(fields: [eventId], references: [id])
+  @@unique([eventId, bucketType])
+}
+
+model Track {
+  id              String   @id @default(uuid())
+  bucketId        String
+  title           String
+  artistName      String
+  albumName       String
+  artworkUrl      String   @default("")
+  sourceService   String   // Spotify | Apple | Tidal
+  externalTrackId String
+  position        Int      @default(0)
+  bucket          MusicBucket @relation(fields: [bucketId], references: [id])
+}
